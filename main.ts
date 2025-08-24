@@ -4,7 +4,7 @@ import { encodeHex } from "@std/encoding/hex";
 const CONTROL_FLAG = 0x80;
 
 interface FileProgressMap {
-  [key: Uint8Array]: number;
+  [key: string]: number;
 }
 let files: FileProgressMap = {};
 
@@ -25,11 +25,15 @@ function httpHandler(req: Request) {
   });
 }
 
-function wsOpen(ev) {
+function wsOpen(ev: Event) {
   console.debug(ev);
 }
 
-function wsMessage(ev) {
+function wsMessage(ev: MessageEvent) {
+  if (ev.target === null || !(ev.target instanceof WebSocket)) {
+    return;
+  }
+
   const msg = new Uint8Array(ev.data);
   if ((msg[0] & CONTROL_FLAG) == CONTROL_FLAG) {
     if (msg.length != 33) {
@@ -37,11 +41,12 @@ function wsMessage(ev) {
       return;
     }
     const channel = msg[0] ^ CONTROL_FLAG;
-    let hash = msg.slice(1);
-    if (!(hash in files)) {
-      files[hash] = 0;
+    const hash = msg.slice(1);
+    const hashHex = encodeHex(hash);
+    if (!(hashHex in files)) {
+      files[hashHex] = 0;
     }
-    let offset = files[hash];
+    let offset = files[hashHex];
     channels[channel] = hash;
     console.debug("channel=", channel, "offset=", offset);
     let resp = new ArrayBuffer(5);
@@ -52,16 +57,17 @@ function wsMessage(ev) {
   } else {
     const channel = msg[0];
     const hash = channels[channel];
-    const l = files[hash];
+    const hashHex = encodeHex(hash);
+    const l = files[hashHex];
     console.debug(
       "updating hash=",
-      encodeHex(hash),
+      hashHex,
       "from=",
       l,
       "to=",
       l + msg.length - 1,
     );
-    files[hash] += msg.length - 1;
+    files[hashHex] += msg.length - 1;
   }
   return;
 }
