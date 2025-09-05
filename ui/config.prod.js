@@ -1,1 +1,1 @@
-export const SERVER_ADDR = "http://vds.io:8000";
+export const SERVER_ADDR = "http://vds.io:13080";

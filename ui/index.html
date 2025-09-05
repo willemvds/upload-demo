@@ -1,14 +1,42 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/bolt.svg" />
+    <link rel="stylesheet" type="text/css" href="src/style.css" />
     <script type="module" src="src/upload.ts"></script>
   </head>
   <body>
-    <form id="uploadForm">
-      <input type="file" id="fileInput" />
-      <button type="submit">Upload File</button>
-    </form>
+    <div id="input">
+      <section id="input-section">
+        <div>
+          <form id="uploadForm">
+            <input type="file" id="fileInput" />
+            <button type="submit">Upload File</button>
+          </form>
+        </div>
+      </section>
+    </div>
+    <div id="uploads">
+      <section id="progress-blocks"></section>
+    </div>
+    <div id="footer">
+      <a href="https://github.com/willemvds/upload-demo">🌩 Source</a>
+    </div>
   </body>
+  <template id="progress-block-template">
+    <div class="progress-block">
+      <div class="name"><p></p></div>
+      <div class="square"><div class="fill p0"></div></div>
+      <div class="square"><div class="fill p1"></div></div>
+      <div class="square"><div class="fill p2"></div></div>
+      <div class="square"><div class="fill p3"></div></div>
+      <div class="square"><div class="fill p4"></div></div>
+      <div class="square"><div class="fill p5"></div></div>
+      <div class="square"><div class="fill p6"></div></div>
+      <div class="square"><div class="fill p7"></div></div>
+      <div class="square"><div class="fill p8"></div></div>
+      <div class="square"><div class="fill p9"></div></div>
+    </div>
+  </template>
 </html>

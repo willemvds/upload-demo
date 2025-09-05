@@ -29,7 +29,7 @@ function wsOpen(ev: Event) {
   console.debug(ev);
 }
 
-function wsMessage(ev: MessageEvent) {
+async function wsMessage(ev: MessageEvent) {
   if (ev.target === null || !(ev.target instanceof WebSocket)) {
     return;
   }
@@ -68,6 +68,7 @@ function wsMessage(ev: MessageEvent) {
       l + msg.length - 1,
     );
     files[hashHex] += msg.length - 1;
+    //await new Promise((resolve) => setTimeout(resolve, 500));
   }
   return;
 }
@@ -84,4 +85,4 @@ function wsHandler(req: Request) {
   return response;
 }
 
-Deno.serve(httpHandler);
+Deno.serve({ port: 13080, hostname: "0.0.0.0" }, httpHandler);
