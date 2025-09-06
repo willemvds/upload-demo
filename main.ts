@@ -16,7 +16,7 @@ let channels: ChannelFileMap = {};
 function httpHandler(req: Request) {
   const url = new URL(req.url);
   const pathname = url.pathname;
-  if (pathname == "/ws") {
+  if (pathname.includes("/ws")) {
     return wsHandler(req);
   }
 
@@ -69,6 +69,11 @@ async function wsMessage(ev: MessageEvent) {
     );
     files[hashHex] += msg.length - 1;
     //await new Promise((resolve) => setTimeout(resolve, 500));
+    let resp = new ArrayBuffer(5);
+    let dv = new DataView(resp);
+    dv.setUint8(0, channel | CONTROL_FLAG);
+    dv.setUint32(1, files[hashHex]);
+    ev.target.send(dv);
   }
   return;
 }

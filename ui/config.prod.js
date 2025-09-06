@@ -1,1 +1,1 @@
-export const SERVER_ADDR = "http://vds.io:13080";
+export const SERVER_ADDR = "https://upload-demo.vds.io";

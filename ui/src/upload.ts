@@ -4,10 +4,16 @@ import { createHash } from "sha256-uint8array";
 
 class UploadChannel {
   hash: Uint8Array;
+  offset: number;
+  filesize: number;
+  sending: bool;
   cb: ProgressCallback;
 
-  constructor(hash: Uint8Array, cb: ProgressCallback) {
+  constructor(hash: Uint8Array, offset: number, cb: ProgressCallback) {
     this.hash = hash;
+    this.offset = offset;
+    this.filesize = 0;
+    this.sending = false;
     this.cb = cb;
   }
 }
@@ -57,7 +63,7 @@ class UploadPipe {
     this.is_connected = false;
     this.ws = null;
 
-    setTimeout(this.connect.bind(this), 5000);
+    setTimeout(this.connect.bind(this), 2000);
   }
 
   public startUpload(hash: TypedArray, cb: ProgessCallback) {
@@ -79,7 +85,7 @@ class UploadPipe {
       upload_message,
     );
     console.debug("send", this.ws.send(upload_message));
-    chans[this.channels] = new UploadChannel(hash, cb);
+    chans[this.channels] = new UploadChannel(hash, 0, cb);
     this.channels += 1;
   }
 
@@ -88,20 +94,28 @@ class UploadPipe {
     let msg = new Uint8Array(await ev.data.arrayBuffer());
     console.debug("msg", msg);
 
+    let channelId = msg[0] ^ 0x80;
+    console.debug("channel id for uploading =", channelId);
     let offset = (msg[1] << 24) +
       (msg[2] << 16) +
       (msg[3] << 8) +
       (msg[4]);
     console.debug("offset for uploading =", offset);
-    let channelId = msg[0] ^ 0x80;
-    console.debug("channel id for uploading =", channelId);
+
     const uc = chans[channelId];
+    uc.offset = offset;
+    if (uc.sending) {
+      uc.cb(offset / uc.filesize * 100);
+      return;
+    }
+    uc.sending = true;
     const hash = uc.hash;
-    const cb = uc.cb;
+    //const cb = uc.cb;
     console.debug("hash for upload=", hash.toHex());
     const f = files[hash];
     console.debug("file = ", f);
     const filesize = f.size;
+    uc.filesize = filesize;
     const readableStream = f.stream();
     const reader = readableStream.getReader({ mode: "byob" });
     let buffer = new ArrayBuffer(64 * 1000 * 10);
@@ -116,9 +130,10 @@ class UploadPipe {
       // TODO(@willemvds): Fix this to deal with split chunks.
       if (offset < read) {
         ev.target.send(tosend);
+        console.debug("buffer amount", ev.target.bufferedAmount);
 
         //await new Promise((resolve) => setTimeout(resolve, 20));
-        cb(read / filesize * 100);
+        //cb(read / filesize * 100);
       } else {
         console.debug("NOT SENDING", offset, read);
       }
