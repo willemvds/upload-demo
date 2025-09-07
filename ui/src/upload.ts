@@ -33,8 +33,16 @@ class UploadPipe {
   readonly NO_PROTOCOLS = [];
   readonly CONTROL_FLAG = 0x80;
 
-  public constructor(addr: string) {
+  public constructor(
+    addr: string,
+    connecting,
+    connected,
+    disconnected,
+  ) {
     this.addr = addr;
+    this.connectingCb = connecting;
+    this.connectedCb = connected;
+    this.disconnectedCb = disconnected;
     this.connect();
   }
 
@@ -45,23 +53,27 @@ class UploadPipe {
     ws.onclose = this.disconnected.bind(this);
     this.ws = ws;
     this.channels = 0x00;
+    this.connectingCb();
   }
 
   private connected(ev) {
     console.debug("connected", typeof ev, ev);
     this.is_connected = true;
     this.ws.onmessage = this.received.bind(this);
+    this.connectedCb();
   }
 
   private failed(ev) {
     console.debug("failed", typeof ev, ev);
     this.is_connected = false;
+    this.disconnectedCb();
   }
 
   private disconnected(ev) {
     console.debug("disconnected", typeof ev, ev);
     this.is_connected = false;
     this.ws = null;
+    this.disconnectedCb();
 
     setTimeout(this.connect.bind(this), 2000);
   }
@@ -193,7 +205,39 @@ function showProgress(pb: HTMLElement, progress: number) {
 
 function init() {
   console.debug("Running init.");
-  const up = new UploadPipe(`${SERVER_ADDR}/ws`);
+
+  const statusConnecting = document.querySelector(
+    "div#status > img#status-connecting",
+  );
+  const statusConnected = document.querySelector(
+    "div#status > img#status-connected",
+  );
+  const statusDisconnected = document.querySelector(
+    "div#status > img#status-disconnected",
+  );
+
+  const connecting = function () {
+    statusConnecting.classList.remove("hidden");
+    statusConnected.classList.add("hidden");
+    statusDisconnected.classList.add("hidden");
+  };
+  const connected = function () {
+    statusConnecting.classList.add("hidden");
+    statusConnected.classList.remove("hidden");
+    statusDisconnected.classList.add("hidden");
+  };
+  const disconnected = function () {
+    statusConnecting.classList.add("hidden");
+    statusConnected.classList.add("hidden");
+    statusDisconnected.classList.remove("hidden");
+  };
+
+  const up = new UploadPipe(
+    `${SERVER_ADDR}/ws`,
+    connecting,
+    connected,
+    disconnected,
+  );
   const form = document.getElementById("uploadForm");
   const fileInput = document.getElementById("fileInput");
 

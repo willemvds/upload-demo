@@ -22,16 +22,28 @@ a:hover {
   color: #535bf2;
 }
 
+.hidden {
+  display: none;
+  opacity: 0%;
+}
+
 body {
   margin: 0;
   display: grid;
   grid-template-columns: 1fr 940px 1fr;
   grid-template-rows: 200px 1fr 1pt;
   grid-template-areas:
-    ". input ."
+    ". header ."
     ". uploads ."
     ". footer .";
   height: 100vh;
+}
+
+div#header {
+  grid-area: header;
+  display: grid;
+  grid-template-columns: 1fr 600px 1fr;
+  grid-template-areas: ". input status";
 }
 
 div#input {
@@ -40,6 +52,17 @@ div#input {
   justify-content: center;
   align-items: center;
   width: 100%;
+}
+
+div#status {
+  grid-area: status;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+img.status {
+  width: 40px;
 }
 
 div#uploads {
