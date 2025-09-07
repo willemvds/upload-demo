@@ -115,13 +115,13 @@ class UploadPipe {
     const hash = uc.hash;
     const f = files[hash];
     const filesize = f.size;
-    uc.filesize = filesize;
-    uc.offset = offset;
-    uc.cb(offset / uc.filesize * 100);
-    if (uc.sending || offset == uc.filesize) {
+    uc.cb(offset / filesize * 100);
+    if (uc.sending || offset == filesize) {
       return;
     }
 
+    uc.filesize = filesize;
+    uc.offset = offset;
     uc.sending = true;
     const readableStream = f.stream();
     const reader = readableStream.getReader({ mode: "byob" });
@@ -131,22 +131,19 @@ class UploadPipe {
       let view = new Uint8Array(buffer, 1, buffer.byteLength - 1);
       const { value, done } = await reader.read(view);
       read += value.length;
-      console.debug("chunk done=", done, "value=", value);
+      // console.debug("chunk done=", done, "value=", value);
       let tosend = new Uint8Array(value.buffer, 0, value.length + 1);
       tosend[0] = channelId;
       // TODO(@willemvds): Fix this to deal with split chunks.
-      if (offset < read) {
+      if (value.length > 0 && offset < read) {
         ev.target.send(tosend);
         // console.debug("buffer amount", ev.target.bufferedAmount);
 
         //await new Promise((resolve) => setTimeout(resolve, 20));
-        //cb(read / filesize * 100);
-      } else {
-        console.debug("NOT SENDING", offset, read);
       }
       buffer = tosend.buffer;
       if (done) {
-        uc.sending = false;
+        console.debug(`Sent ${read} at ${offset}`);
         break;
       }
     }
@@ -247,7 +244,6 @@ function init() {
       showProgress(pb, progress);
     };
     up.startUpload(hash, cb);
-    console.debug(`${hash}`);
   });
 }
 

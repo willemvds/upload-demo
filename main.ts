@@ -58,21 +58,14 @@ async function wsMessage(ev: MessageEvent) {
     const channel = msg[0];
     const hash = channels[channel];
     const hashHex = encodeHex(hash);
-    const l = files[hashHex];
-    console.debug(
-      "updating hash=",
-      hashHex,
-      "from=",
-      l,
-      "to=",
-      l + msg.length - 1,
-    );
     files[hashHex] += msg.length - 1;
+    const l = files[hashHex];
+
     //await new Promise((resolve) => setTimeout(resolve, 500));
     let resp = new ArrayBuffer(5);
     let dv = new DataView(resp);
     dv.setUint8(0, channel | CONTROL_FLAG);
-    dv.setUint32(1, files[hashHex]);
+    dv.setUint32(1, l);
     ev.target.send(dv);
   }
   return;
