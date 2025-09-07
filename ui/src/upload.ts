@@ -94,40 +94,35 @@ class UploadPipe {
       hash.toHex(),
       "using",
       this.channels,
-      upload_message,
     );
-    console.debug("send", this.ws.send(upload_message));
+    this.ws.send(upload_message);
     chans[this.channels] = new UploadChannel(hash, 0, cb);
     this.channels += 1;
   }
 
   private async received(ev) {
-    console.debug("received", typeof ev, ev);
     let msg = new Uint8Array(await ev.data.arrayBuffer());
-    console.debug("msg", msg);
 
     let channelId = msg[0] ^ 0x80;
-    console.debug("channel id for uploading =", channelId);
     let offset = (msg[1] << 24) +
       (msg[2] << 16) +
       (msg[3] << 8) +
       (msg[4]);
-    console.debug("offset for uploading =", offset);
+    console.debug(`channel id=${channelId}, offset=${offset}`);
 
     const uc = chans[channelId];
-    uc.offset = offset;
-    if (uc.sending) {
-      uc.cb(offset / uc.filesize * 100);
-      return;
-    }
-    uc.sending = true;
+
     const hash = uc.hash;
-    //const cb = uc.cb;
-    console.debug("hash for upload=", hash.toHex());
     const f = files[hash];
-    console.debug("file = ", f);
     const filesize = f.size;
     uc.filesize = filesize;
+    uc.offset = offset;
+    uc.cb(offset / uc.filesize * 100);
+    if (uc.sending || offset == uc.filesize) {
+      return;
+    }
+
+    uc.sending = true;
     const readableStream = f.stream();
     const reader = readableStream.getReader({ mode: "byob" });
     let buffer = new ArrayBuffer(64 * 1000 * 10);
@@ -142,7 +137,7 @@ class UploadPipe {
       // TODO(@willemvds): Fix this to deal with split chunks.
       if (offset < read) {
         ev.target.send(tosend);
-        console.debug("buffer amount", ev.target.bufferedAmount);
+        // console.debug("buffer amount", ev.target.bufferedAmount);
 
         //await new Promise((resolve) => setTimeout(resolve, 20));
         //cb(read / filesize * 100);
@@ -151,6 +146,7 @@ class UploadPipe {
       }
       buffer = tosend.buffer;
       if (done) {
+        uc.sending = false;
         break;
       }
     }
@@ -196,7 +192,6 @@ function showProgress(pb: HTMLElement, progress: number) {
   for (let i = 0; i <= maxBlockNum; i++) {
     const block = pb.querySelectorAll(`.p${i}`);
     const perc = Math.min(10, progress - (i * 10));
-    console.debug(block);
     if (block.length > 0) {
       block[0].style.height = `${perc * 10}%`;
     }
@@ -243,9 +238,7 @@ function init() {
 
   form.addEventListener("submit", async function (ev) {
     ev.preventDefault();
-    console.debug(fileInput);
     console.debug(fileInput.files);
-    console.debug(fileInput.files[0].stream);
 
     const hash = await sha256(fileInput.files[0].stream());
     files[hash] = fileInput.files[0];
@@ -273,13 +266,11 @@ function createProgressBlock(name: string, hash: string) {
   }
 
   const progressBlock = progressBlockTemplate.content.cloneNode(true);
-  console.debug(progressBlock);
   const blockId = `progress-${hash}`;
-  console.debug(progressBlocks.appendChild(progressBlock));
+  progressBlocks.appendChild(progressBlock);
   const blocks = progressBlocks.querySelectorAll(
     "div.progress-block:last-of-type",
   );
-  console.debug(blocks);
   blocks[0].id = blockId;
   const nameP = blocks[0].querySelectorAll(
     "div.name > p",

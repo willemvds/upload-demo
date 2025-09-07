@@ -26,7 +26,7 @@ function httpHandler(req: Request) {
 }
 
 function wsOpen(ev: Event) {
-  console.debug(ev);
+  // console.debug(ev);
 }
 
 async function wsMessage(ev: MessageEvent) {
