@@ -29,6 +29,19 @@ function wsOpen(ev: Event) {
   // console.debug(ev);
 }
 
+function uint8ArrayEquals(left: Uint8Array, right: Uint8Array) {
+  if (left.length != right.length) {
+    return false;
+  }
+
+  return left.reduce(function (acc: number, val, idx: number): number {
+    if (val != right[idx]) {
+      acc += 1;
+    }
+    return acc;
+  }, 0) == 0;
+}
+
 async function wsMessage(ev: MessageEvent) {
   if (ev.target === null || !(ev.target instanceof WebSocket)) {
     return;
@@ -41,8 +54,21 @@ async function wsMessage(ev: MessageEvent) {
       return;
     }
     const channel = msg[0] ^ CONTROL_FLAG;
+    if (channel in channels) {
+      console.debug(`Channel#${channel} already in use. Dropping.`);
+      return;
+    }
     const hash = msg.slice(1);
     const hashHex = encodeHex(hash);
+    for (let chan in channels) {
+      console.debug(chan, channels[chan], "vs", hash);
+      if (uint8ArrayEquals(channels[chan], hash)) {
+        console.debug(
+          `File#${hashHex} already present on Channel#${chan}. Dropping.`,
+        );
+        return;
+      }
+    }
     if (!(hashHex in files)) {
       files[hashHex] = 0;
     }
