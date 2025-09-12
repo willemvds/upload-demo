@@ -285,16 +285,19 @@ function createProgressBlock(name: string, hash: string) {
 
   const progressBlock = progressBlockTemplate.content.cloneNode(true);
   const blockId = `progress-${hash}`;
-  progressBlocks.appendChild(progressBlock);
-  const blocks = progressBlocks.querySelectorAll(
-    "div.progress-block:last-of-type",
-  );
-  blocks[0].id = blockId;
-  const nameP = blocks[0].querySelectorAll(
+  const firstBlock = progressBlocks.firstChild;
+  if (firstBlock) {
+    progressBlocks.insertBefore(progressBlock, firstBlock);
+  } else {
+    progressBlocks.appendChild(progressBlock);
+  }
+  const newBlock = progressBlocks.querySelector("div.progress-block");
+  newBlock.id = blockId;
+  const nameP = newBlock.querySelector(
     "div.name > p",
   );
-  nameP[0].textContent = name;
-  return blocks[0]; //document.getElementById(blockId));
+  nameP.textContent = name;
+  return newBlock;
 }
 
 const READY_STATE_LOADING = "loading";
