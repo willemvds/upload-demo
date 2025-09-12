@@ -139,7 +139,7 @@ class UploadPipe {
         ev.target.send(tosend);
         // console.debug("buffer amount", ev.target.bufferedAmount);
 
-        //await new Promise((resolve) => setTimeout(resolve, 20));
+        // await new Promise((resolve) => setTimeout(resolve, 20));
       }
       buffer = tosend.buffer;
       if (done) {
@@ -233,17 +233,39 @@ function init() {
   const form = document.getElementById("uploadForm");
   const fileInput = document.getElementById("fileInput");
 
-  form.addEventListener("submit", async function (ev) {
+  window.addEventListener("dragover", (ev) => {
     ev.preventDefault();
-    console.debug(fileInput.files);
+  });
 
-    const hash = await sha256(fileInput.files[0].stream());
-    files[hash] = fileInput.files[0];
-    const pb = createProgressBlock(fileInput.files[0].name, hash.toHex());
+  window.addEventListener("drop", (ev) => {
+    ev.preventDefault();
+  });
+
+  async function fileHandler(file: File) {
+    const hash = await sha256(file.stream());
+    files[hash] = file;
+    const pb = createProgressBlock(file.name, hash.toHex());
     const cb = function (progress: number) {
       showProgress(pb, progress);
     };
     up.startUpload(hash, cb);
+  }
+
+  const inputDiv = document.getElementById("input");
+  inputDiv.addEventListener("drop", async function (ev) {
+    ev.preventDefault();
+    for (const item of ev.dataTransfer.items) {
+      if (item.kind != "file") {
+        const file = item.getAsFile();
+        await fileHandler(file);
+      }
+    }
+  });
+
+  form.addEventListener("submit", async function (ev) {
+    ev.preventDefault();
+    console.debug(fileInput.files);
+    await fileHandler(fileInput.files[0]);
   });
 }
 
